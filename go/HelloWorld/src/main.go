@@ -10,11 +10,14 @@ hello and arrayhander in the src directory.
 */
 package main
 
-// personal note: Co-Pilot automatically imports used packages , deletes unused packages
+/* personal note: Co-Pilot editor automatically imports used packages ,
+deletes unused packages */
 import (
 	"fmt"
 	"project-layout/src/arrayhandler"
+	"project-layout/src/fibonacci"
 	"project-layout/src/hello"
+	"project-layout/src/prime"
 
 	"github.com/enescakir/emoji"
 )
@@ -35,13 +38,25 @@ type Manager struct {
 func main() {
 	fmt.Println("Hello World from Go!")
 	hello.Hello()
-	GoodBye()
+	fmt.Println("Sum of 5 and 6 is", sum(5, 6))
 
 	fmt.Println(emoji.PersonShrugging)
 
+	fmt.Println("Array, Slice and Map examples start")
 	arrayhandler.Array()
 	arrayhandler.ArraySlice()
 	arrayhandler.ArrayMap()
+	fmt.Println("Array, Slice and Map examples end\n")
+
+	// Compute and print n prime numbers
+	n := 10
+	primeNumbers := prime.ComputePrimes(n)
+	fmt.Printf("Prime numbers up to %d are %v\n", n, primeNumbers)
+
+	// Compute and print n fibonacci numbers
+	n = 10
+	fibonacciNumbers := fibonacci.ComputeFibonacci(n)
+	fmt.Printf("Fibonacci numbers up to %d are %v\n", n, fibonacciNumbers)
 
 	m := Manager{
 		Employee: Employee{
@@ -52,6 +67,7 @@ func main() {
 	}
 
 	fmt.Println(m)
+	GoodBye()
 }
 
 func (e Employee) Description() {
@@ -60,4 +76,8 @@ func (e Employee) Description() {
 
 func (m Manager) FindNewEmployee() []Employee {
 	return m.Reports
+}
+
+func sum(x, y int) int {
+	return x + y
 }

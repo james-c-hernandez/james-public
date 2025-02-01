@@ -33,10 +33,10 @@ func main() {
 	fmt.Println("Hello World from Go!")
 	hello.Hello()
 
-	// Array()
+	arrayhandler.Array()
 	arrayhandler.ArraySlice()
+	arrayhandler.ArrayMap()
 
-	// ArrayMap()
 	m := Manager{
 		Employee: Employee{
 			Name: "John DoeMgr",

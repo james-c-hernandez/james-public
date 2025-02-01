@@ -2,6 +2,9 @@ package arrayhandler
 
 import "fmt"
 
+/* An Array is a reference to an static array in memory.
+Slices have to contain items of the same type.
+Slices can be CAN NOT be resized */
 func Array() {
 	// Array is a collection of items of the same type
 	var arr1 [5]int
@@ -19,25 +22,33 @@ func Array() {
 
 }
 
+/* A slice is a reference to an dynamic array in memory.
+Slices have to contain items of the same type.
+Slices can be resized by apppending items */
 func ArraySlice() {
-	// Slice is a reference to an array
-	// Slices can be resized
+
 	s1 := make([]string, 5)
 	s2 := make([]int, 5)
 
 	s2 = append(s2, 10)
 
-	fmt.Println(s1)
+	fmt.Println("ArraySlice output", s1)
 	fmt.Println(s2)
 }
 
+/* A Map is a reference to an dynamic collection of key-value pairs.
+Maps have to contain items of the same type.
+Maps can be resized by apppending items differenty than Slice */
 func ArrayMap() {
-	// Map is a collection of key-value pairs
 	m1 := make(map[string]int)
-	m1["key1"] = 20
-	m1["key2"] = 30
-	m1["Some other key"] = 40
+	m1["Alice"] = 85
+	m1["Bob"] = 92
 
-	fmt.Println(m1["key1"])
+	fmt.Println("ArrayMap output", m1)
 
+	//Add more key-value pairs
+	m1["Carrol"] = 78
+	m1["Dave"] = 90
+
+	fmt.Println("ArrayMap output", m1)
 }

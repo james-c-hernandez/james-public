@@ -17,7 +17,13 @@ To run this project, you need to have Go installed on your machine. Follow the i
    ```
    cd project-laypout
    ```
-3. Run the application:
+3. To compile the application: 
+   ```
+   go build ./src/main.go
+   then 
+   ./src/main.exe
+   ```
+3. or Run the application:
    ```
    go run src/main.go
    ```

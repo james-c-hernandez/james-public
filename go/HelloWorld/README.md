@@ -15,7 +15,7 @@ To run this project, you need to have Go installed on your machine. Follow the i
 1. Clone the repository or download the project files.
 2. Navigate to the project directory:
    ```
-   cd my-go-project
+   cd project-laypout
    ```
 3. Run the application:
    ```

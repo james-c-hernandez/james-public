@@ -1,3 +1,3 @@
-module my-go-project
+module project-layout
 
-go 1.18
+go 1.23.5

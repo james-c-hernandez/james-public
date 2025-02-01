@@ -10,10 +10,13 @@ hello and arrayhander in the src directory.
 */
 package main
 
+// personal note: Co-Pilot automatically imports used packages , deletes unused packages
 import (
 	"fmt"
 	"project-layout/src/arrayhandler"
 	"project-layout/src/hello"
+
+	"github.com/enescakir/emoji"
 )
 
 // Employee struct
@@ -32,6 +35,9 @@ type Manager struct {
 func main() {
 	fmt.Println("Hello World from Go!")
 	hello.Hello()
+	GoodBye()
+
+	fmt.Println(emoji.PersonShrugging)
 
 	arrayhandler.Array()
 	arrayhandler.ArraySlice()
@@ -46,7 +52,6 @@ func main() {
 	}
 
 	fmt.Println(m)
-
 }
 
 func (e Employee) Description() {

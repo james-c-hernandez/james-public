@@ -19,16 +19,21 @@ To run this project, you need to have Go installed on your machine. Follow the i
    ```
 3. To compile the application: 
    ```
-   go build ./src/main.go
+   cd src
+   go build main.go goodbye.go
    then 
-   ./src/main.exe
+   ./main.exe
    ```
 3. or Run the application:
    ```
-   go run src/main.go
+   go run main.go googbye.go
    ```
 
 You should see the output:
 ```
 Hello World from Go!
 ```
+
+
+Note: this uses an external package that was loaded from the command line from the folder helloworld, that automatically updates the go.mod and go.sum files:
+go get github.com/enescakir/emoji 

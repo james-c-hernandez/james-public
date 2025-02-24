@@ -1,7 +1,7 @@
-public class Employee extends Person {
+public class CEmployee extends CPerson {
     private String employeeId;
 
-    public Employee(String name, int age, String employeeId) {
+    public CEmployee(String name, int age, String employeeId) {
         super(name,age);
         this.employeeId=employeeId;
     }

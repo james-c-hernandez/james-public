@@ -1,8 +1,8 @@
-public class Person {
+public class CPerson {
     private String name;
     private int age;
 
-    public Person(String name, int age) {
+    public CPerson(String name, int age) {
         this.name = name;
         this.age = age;
     }

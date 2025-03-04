@@ -14,7 +14,7 @@ public class CodeWorkout {
         CEmployee emp1 = new CEmployee("Alice", 30, "E123");
         CEmployee emp2 = new CEmployee("Bob", 25, "E456");
         
-        // Test the objects
+        // Test the employee objects
         System.out.println("Employee 1: " + emp1);
         System.out.println("Employee 2: " + emp2);
 
@@ -25,5 +25,10 @@ public class CodeWorkout {
         ArrayList<Integer> y = myMath.prime(13);
         System.out.println(y);
 
+        CLists myList = new CLists();
+        myList.Array();
+        myList.ArraySlice();
+        myList.ArrayMap();
+        myList.SortArrayInt();
     }
 }

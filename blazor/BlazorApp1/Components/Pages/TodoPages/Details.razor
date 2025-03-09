@@ -1,0 +1,48 @@
+﻿@page "/todos/details"
+@using Microsoft.EntityFrameworkCore
+@using BlazorApp1.Entities
+@inject IDbContextFactory<BlazorApp1.Data.AppDBContext> DbFactory
+@inject NavigationManager NavigationManager
+
+<PageTitle>Details</PageTitle>
+
+<h1>Details</h1>
+
+<div>
+    <h2>Todo</h2>
+    <hr />
+    @if (todo is null)
+    {
+        <p><em>Loading...</em></p>
+    }
+    else {
+        <dl class="row">
+            <dt class="col-sm-2">Title</dt>
+            <dd class="col-sm-10">@todo.Title</dd>
+            <dt class="col-sm-2">IsDone</dt>
+            <dd class="col-sm-10">@todo.IsDone</dd>
+        </dl>
+        <div>
+            <a href="@($"/todos/edit?id={todo.Id}")">Edit</a> |
+            <a href="@($"/todos")">Back to List</a>
+        </div>
+    }
+</div>
+
+@code {
+    private Todo? todo;
+
+    [SupplyParameterFromQuery]
+    private int Id { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        using var context = DbFactory.CreateDbContext();
+        todo = await context.Todo.FirstOrDefaultAsync(m => m.Id == Id);
+
+        if (todo is null)
+        {
+            NavigationManager.NavigateTo("notfound");
+        }
+    }
+}

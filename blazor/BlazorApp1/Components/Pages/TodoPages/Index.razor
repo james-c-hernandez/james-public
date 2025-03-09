@@ -1,0 +1,37 @@
+﻿@page "/todos"
+@using Microsoft.EntityFrameworkCore
+@using Microsoft.AspNetCore.Components.QuickGrid
+@using BlazorApp1.Entities
+@using BlazorApp1.Data
+@implements IAsyncDisposable
+@inject IDbContextFactory<BlazorApp1.Data.AppDBContext> DbFactory
+
+<PageTitle>Index</PageTitle>
+
+<h1>Index</h1>
+
+<p>
+    <a href="todos/create">Create New</a>
+</p>
+
+<QuickGrid Class="table" Items="context.Todo">
+    <PropertyColumn Property="todo => todo.Title" />
+    <PropertyColumn Property="todo => todo.IsDone" />
+
+    <TemplateColumn Context="todo">
+        <a href="@($"todos/edit?id={todo.Id}")">Edit</a> |
+        <a href="@($"todos/details?id={todo.Id}")">Details</a> |
+        <a href="@($"todos/delete?id={todo.Id}")">Delete</a>
+    </TemplateColumn>
+</QuickGrid>
+
+@code {
+    private AppDBContext context = default!;
+
+    protected override void OnInitialized()
+    {
+        context = DbFactory.CreateDbContext();
+    }
+
+    public async ValueTask DisposeAsync() => await context.DisposeAsync();
+}

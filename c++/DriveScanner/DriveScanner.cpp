@@ -60,9 +60,28 @@ std::string fsTimeToString(const fs::file_time_type& ft) {
         gmt.tm_hour, gmt.tm_min, gmt.tm_sec);
 }
 
+// Get the hostname in a portable way
+std::string getHostname() {
+#ifdef _WIN32
+    char computerName[MAX_COMPUTERNAME_LENGTH + 1];
+    DWORD size = sizeof(computerName);
+    if (GetComputerNameA(computerName, &size)) {
+        return std::string(computerName);
+    }
+    return "Unknown Host (Windows)";
+#else
+    char hostname[256];
+    if (gethostname(hostname, sizeof(hostname)) == 0) {
+        return std::string(hostname);
+    }
+    return "Unknown Host (POSIX)";
+#endif
+}
 int main() {
     std::string rootPath = "C:\\"; // Starting at C: drive
     int skippedCount = 0;
+
+	std::cout << "Hostname: " << getHostname() << "\n"; // Call to getHostname to suppress unused function warning
 
     std::cout << "Scanning drive " << rootPath << "...\n";
 

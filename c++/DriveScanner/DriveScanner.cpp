@@ -3,12 +3,26 @@
 #include <format>
 #include <string>
 #include <chrono>
-#include <windows.h> // For creation time on Windows
+
 
 // Suppress MSVC warning for gmtime
 //#ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 //#endif
+
+
+#ifndef _WIN32
+#include <unistd.h>
+#include <ifaddrs.h>
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#else
+#include <winsock2.h>
+#include <ws2tcpip.h>
+#pragma comment(lib, "Ws2_32.lib")
+#endif
+
+#include <windows.h> // For creation time on Windows. Note this has to come AFTER Winsock2.h
 
 namespace fs = std::filesystem;
 
@@ -77,12 +91,199 @@ std::string getHostname() {
     return "Unknown Host (POSIX)";
 #endif
 }
+
+// Get the first non-loopback IPv4 address, returns a std::string
+std::string getIPAddress_old() {
+#ifdef _WIN32
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        return "IP Unknown (WSAStartup failed)";
+    }
+
+    char hostname[256];
+    if (gethostname(hostname, sizeof(hostname)) != 0) {
+        WSACleanup();
+        return "IP Unknown (gethostname failed)";
+    }
+
+    struct addrinfo hints = { 0 }, * res = nullptr;
+    hints.ai_family = AF_INET; // IPv4 only
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (getaddrinfo(hostname, nullptr, &hints, &res) != 0) {
+        WSACleanup();
+        return "IP Unknown (getaddrinfo failed)";
+    }
+
+    char ipStr[INET_ADDRSTRLEN];
+    for (struct addrinfo* p = res; p != nullptr; p = p->ai_next) {
+        struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
+        if (inet_ntop(AF_INET, &(ipv4->sin_addr), ipStr, sizeof(ipStr)) != nullptr) {
+            std::string ip(ipStr);
+            if (ip != "127.0.0.1") { // Skip loopback
+                freeaddrinfo(res);
+                WSACleanup();
+                return ip;
+            }
+        }
+    }
+    freeaddrinfo(res);
+    WSACleanup();
+    return "IP Unknown (no non-loopback address)";
+#else
+    struct ifaddrs* ifaddr, * ifa;
+    if (getifaddrs(&ifaddr) == -1) {
+        return "IP Unknown (getifaddrs failed)";
+    }
+
+    char ipStr[INET_ADDRSTRLEN];
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == nullptr || ifa->ifa_addr->sa_family != AF_INET) {
+            continue; // Skip non-IPv4
+        }
+        struct sockaddr_in* sa = (struct sockaddr_in*)ifa->ifa_addr;
+        if (inet_ntop(AF_INET, &(sa->sin_addr), ipStr, sizeof(ipStr)) != nullptr) {
+            std::string ip(ipStr);
+            if (ip != "127.0.0.1") { // Skip loopback
+                freeifaddrs(ifaddr);
+                return ip;
+            }
+        }
+    }
+    freeifaddrs(ifaddr);
+    return "IP Unknown (no non-loopback address)";
+#endif
+}
+
+
+// Check if an IP has Internet connectivity by attempting a connection to 8.8.8.8
+bool hasInternetConnectivity(const std::string& ip) {
+    int sock = socket(AF_INET, SOCK_STREAM, IPPROTO_TCP);
+    if (sock == -1) return false;
+
+#ifdef _WIN32
+    // Set non-blocking mode on Windows
+    u_long mode = 1;
+    ioctlsocket(sock, FIONBIO, &mode);
+#else
+    // Set non-blocking mode on POSIX
+    int flags = fcntl(sock, F_GETFL, 0);
+    fcntl(sock, F_SETFL, flags | O_NONBLOCK);
+#endif
+
+    struct sockaddr_in server;
+    server.sin_family = AF_INET;
+    server.sin_port = htons(53); // DNS port
+    inet_pton(AF_INET, "8.8.8.8", &server.sin_addr); // Google DNS
+
+    // Attempt to connect
+    int result = connect(sock, (struct sockaddr*)&server, sizeof(server));
+    bool connected = false;
+
+    if (result == -1) {
+#ifdef _WIN32
+        if (WSAGetLastError() == WSAEWOULDBLOCK) {
+#else
+        if (errno == EINPROGRESS) {
+#endif
+            // Connection in progress, use select to check
+            fd_set writefds;
+            FD_ZERO(&writefds);
+            FD_SET(sock, &writefds);
+            struct timeval tv = { 2, 0 }; // 2-second timeout
+            if (select(sock + 1, nullptr, &writefds, nullptr, &tv) > 0) {
+                int so_error;
+                socklen_t len = sizeof(so_error);
+                getsockopt(sock, SOL_SOCKET, SO_ERROR, (char*)&so_error, &len);
+                connected = (so_error == 0);
+            }
+        }
+        }
+    else {
+        connected = true; // Immediate success (rare in non-blocking)
+    }
+
+#ifdef _WIN32
+    closesocket(sock);
+#else
+    close(sock);
+#endif
+    return connected;
+    }
+
+
+
+// Get the first non-loopback IPv4 address with Internet connectivity
+std::string getIPAddress() {
+#ifdef _WIN32
+    WSADATA wsaData;
+    if (WSAStartup(MAKEWORD(2, 2), &wsaData) != 0) {
+        return "IP Unknown (WSAStartup failed)";
+    }
+
+    char hostname[256];
+    if (gethostname(hostname, sizeof(hostname)) != 0) {
+        WSACleanup();
+        return "IP Unknown (gethostname failed)";
+    }
+
+    struct addrinfo hints = { 0 }, * res = nullptr;
+    hints.ai_family = AF_INET; // IPv4 only
+    hints.ai_socktype = SOCK_STREAM;
+
+    if (getaddrinfo(hostname, nullptr, &hints, &res) != 0) {
+        WSACleanup();
+        return "IP Unknown (getaddrinfo failed)";
+    }
+
+    char ipStr[INET_ADDRSTRLEN];
+    for (struct addrinfo* p = res; p != nullptr; p = p->ai_next) {
+        struct sockaddr_in* ipv4 = (struct sockaddr_in*)p->ai_addr;
+        if (inet_ntop(AF_INET, &(ipv4->sin_addr), ipStr, sizeof(ipStr)) != nullptr) {
+            std::string ip(ipStr);
+            if (ip != "127.0.0.1" && hasInternetConnectivity(ip)) { // Check connectivity
+                freeaddrinfo(res);
+                WSACleanup();
+                return ip;
+            }
+        }
+    }
+    freeaddrinfo(res);
+    WSACleanup();
+    return "IP Unknown (no Internet-connected address)";
+#else
+    struct ifaddrs* ifaddr, * ifa;
+    if (getifaddrs(&ifaddr) == -1) {
+        return "IP Unknown (getifaddrs failed)";
+    }
+
+    char ipStr[INET_ADDRSTRLEN];
+    for (ifa = ifaddr; ifa != nullptr; ifa = ifa->ifa_next) {
+        if (ifa->ifa_addr == nullptr || ifa->ifa_addr->sa_family != AF_INET) {
+            continue; // Skip non-IPv4
+        }
+        struct sockaddr_in* sa = (struct sockaddr_in*)ifa->ifa_addr;
+        if (inet_ntop(AF_INET, &(sa->sin_addr), ipStr, sizeof(ipStr)) != nullptr) {
+            std::string ip(ipStr);
+            if (ip != "127.0.0.1" && hasInternetConnectivity(ip)) { // Check connectivity
+                freeifaddrs(ifaddr);
+                return ip;
+            }
+        }
+    }
+    freeifaddrs(ifaddr);
+    return "IP Unknown (no Internet-connected address)";
+#endif
+}
+
+
+
 int main() {
     std::string rootPath = "C:\\"; // Starting at C: drive
     int skippedCount = 0;
 
 	std::cout << "Hostname: " << getHostname() << "\n"; // Call to getHostname to suppress unused function warning
-
+    std::cout << std::format("IP Address: {}\n", getIPAddress());
     std::cout << "Scanning drive " << rootPath << "...\n";
 
     try {

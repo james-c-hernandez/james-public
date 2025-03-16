@@ -2,8 +2,63 @@
 #include <filesystem>
 #include <format>
 #include <string>
+#include <chrono>
+#include <windows.h> // For creation time on Windows
+
+// Suppress MSVC warning for gmtime
+//#ifdef _MSC_VER
+#define _CRT_SECURE_NO_WARNINGS
+//#endif
 
 namespace fs = std::filesystem;
+
+// Convert FILETIME to a readable string
+std::string fileTimeToString(const FILETIME& ft) {
+    SYSTEMTIME st;
+    FileTimeToSystemTime(&ft, &st);
+    return std::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}",
+        st.wYear, st.wMonth, st.wDay, st.wHour, st.wMinute, st.wSecond);
+}
+
+// Get creation time using Windows API
+std::string getCreationTime(const fs::path& path) {
+    HANDLE hFile = CreateFileA(path.string().c_str(), GENERIC_READ, FILE_SHARE_READ, NULL, OPEN_EXISTING, 0, NULL);
+    if (hFile == INVALID_HANDLE_VALUE) {
+        return "Access Denied";
+    }
+    FILETIME ftCreate;
+    if (!GetFileTime(hFile, &ftCreate, NULL, NULL)) {
+        CloseHandle(hFile);
+        return "Unknown";
+    }
+    CloseHandle(hFile);
+    return fileTimeToString(ftCreate);
+}
+
+//// Convert fs::file_time_type to a readable string unsafe!
+//std::string fsTimeToString(const fs::file_time_type& ft) {
+//    auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+//        ft - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
+//    std::time_t tt = std::chrono::system_clock::to_time_t(sctp);
+//    std::tm* gmt = std::gmtime(&tt);
+//    return std::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}",
+//        gmt->tm_year + 1900, gmt->tm_mon + 1, gmt->tm_mday,
+//        gmt->tm_hour, gmt->tm_min, gmt->tm_sec);
+//}
+
+std::string fsTimeToString(const fs::file_time_type& ft) {
+    auto sctp = std::chrono::time_point_cast<std::chrono::system_clock::duration>(
+        ft - fs::file_time_type::clock::now() + std::chrono::system_clock::now());
+    std::time_t tt = std::chrono::system_clock::to_time_t(sctp);
+    std::tm gmt;
+    if (gmtime_s(&gmt, &tt) != 0) {
+        // Handle error
+        return "Unknown";
+    }
+    return std::format("{:04d}-{:02d}-{:02d} {:02d}:{:02d}:{:02d}",
+        gmt.tm_year + 1900, gmt.tm_mon + 1, gmt.tm_mday,
+        gmt.tm_hour, gmt.tm_min, gmt.tm_sec);
+}
 
 int main() {
     std::string rootPath = "C:\\"; // Starting at C: drive
@@ -20,11 +75,14 @@ int main() {
                     std::string fullPath = path.string();
                     std::string filename = path.filename().string();
                     uint64_t size = fs::file_size(path);
+                    std::string creationTime = getCreationTime(path); // Windows-specific creation time
+                    std::string lastModifiedTime = fsTimeToString(fs::last_write_time(path)); // Last modified time
 
-                    // Print using std::format for clean output
+                    // Print using std::format with creation and modified times
                     std::cout << std::format(
-                        "Full Path: {}\nFilename: {}\nSize: {} bytes\n------------------------\n",
-                        fullPath, filename, size
+                        "Full Path: {}\nFilename: {}\nSize: {} bytes\n"
+                        "Created: {}\nLast Modified: {}\n------------------------\n",
+                        fullPath, filename, size, creationTime, lastModifiedTime
                     );
                 }
             }

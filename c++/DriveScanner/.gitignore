@@ -1,0 +1,8 @@
+.vs/
+*.ipch         # IntelliSense precompiled headers
+*.suo          # Solution user options
+*.obj          # Object files
+*.pdb          # Program database files
+*.exe          # Compiled executables (if not needed in repo)
+Debug/         # Debug build folder
+Release/       # Release build folder
